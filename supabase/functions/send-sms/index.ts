@@ -1,8 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const AFRICASTALKING_API_KEY = Deno.env.get('AFRICASTALKING_API_KEY') || '';
-const AFRICASTALKING_USERNAME = Deno.env.get('AFRICASTALKING_USERNAME') || '';
+const AFRICASTALKING_API_KEY = (Deno.env.get('AFRICASTALKING_API_KEY') || '').trim();
+const AFRICASTALKING_USERNAME = (Deno.env.get('AFRICASTALKING_USERNAME') || '').trim();
 
 interface SMSRequest {
   to: string;
@@ -35,10 +35,20 @@ serve(async (req) => {
       );
     }
 
-    const isSandbox = AFRICASTALKING_USERNAME === 'sandbox';
+    if (!AFRICASTALKING_API_KEY || !AFRICASTALKING_USERNAME) {
+      console.error('Missing Africa\'s Talking credentials');
+      return new Response(
+        JSON.stringify({ error: 'Africa\'s Talking credentials not configured in Supabase secrets' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+      );
+    }
+
+    const isSandbox = AFRICASTALKING_USERNAME.toLowerCase() === 'sandbox';
     const smsEndpoint = isSandbox
       ? 'https://api.sandbox.africastalking.com/version1/messaging'
       : 'https://api.africastalking.com/version1/messaging';
+
+    console.log(`Sending SMS to ${to} using ${isSandbox ? 'sandbox' : 'production'}`);
 
     // Send SMS via Africa's Talking
     const smsResponse = await fetch(smsEndpoint, {
@@ -52,11 +62,21 @@ serve(async (req) => {
         username: AFRICASTALKING_USERNAME,
         to: to,
         message: message,
-        from: isSandbox ? '' : 'M_kumbusha', // Only use sender ID in production if allowed
+        from: isSandbox ? '' : 'M_kumbusha',
       }),
     });
 
-    const smsData = await smsResponse.json();
+    const responseText = await smsResponse.text();
+    let smsData;
+    try {
+      smsData = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Failed to parse AT response as JSON:', responseText);
+      return new Response(
+        JSON.stringify({ error: `Africa's Talking Error: ${responseText}` }),
+        { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+      );
+    }
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';

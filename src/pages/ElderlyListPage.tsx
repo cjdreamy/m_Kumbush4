@@ -44,9 +44,26 @@ export default function ElderlyListPage() {
 
       toast.success('Instant SMS sent successfully!');
       setSmsMessage('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to send instant SMS:', error);
-      toast.error('Failed to send SMS. Check your configuration.');
+
+      // Extract error message from Supabase function error
+      let errorMsg = 'Failed to send SMS. Check your configuration.';
+      if (error?.context) {
+        try {
+          const body = await error.context.json();
+          errorMsg = body.error || errorMsg;
+        } catch (e) {
+          try {
+            const text = await error.context.text();
+            errorMsg = text || errorMsg;
+          } catch (e2) { }
+        }
+      } else if (error?.message) {
+        errorMsg = error.message;
+      }
+
+      toast.error(errorMsg);
     } finally {
       setSendingSms(null);
     }

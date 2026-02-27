@@ -12,6 +12,7 @@ import type { ScheduleWithElderly, ReminderLogWithDetails } from '@/types/databa
 import { Calendar, Clock, Phone, MessageSquare, Globe, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { format } from 'date-fns';
 
 export default function SchedulesPage() {
   const [schedules, setSchedules] = useState<ScheduleWithElderly[]>([]);
@@ -104,7 +105,7 @@ export default function SchedulesPage() {
         : `Reminder: ${schedule.title}. ${schedule.description || ''}`;
 
       // Send reminder
-      const { data, error } = await supabase.functions.invoke('send-reminder', {
+      const { error } = await supabase.functions.invoke('send-reminder', {
         body: {
           scheduleId: schedule.id,
           elderlyId: schedule.elderly_id,
@@ -116,26 +117,37 @@ export default function SchedulesPage() {
       });
 
       if (error) {
-        const errorMsg = await error?.context?.text();
-        console.error('Send reminder error:', errorMsg || error?.message);
+        console.error('Send reminder error:', error);
 
-        // Show more specific error message
-        if (errorMsg && errorMsg.includes('AFRICASTALKING')) {
-          toast.error('Africa\'s Talking API credentials not configured. Please check the setup guide above.');
-        } else if (errorMsg) {
-          toast.error(`Failed to send reminder: ${errorMsg}`);
+        let errorMsg = 'Failed to send reminder. Please check your configuration.';
+        if (error?.context) {
+          try {
+            const body = await error.context.json();
+            errorMsg = body.error || errorMsg;
+          } catch (e) {
+            try {
+              const text = await error.context.text();
+              errorMsg = text || errorMsg;
+            } catch (e2) { }
+          }
+        } else if (error?.message) {
+          errorMsg = error.message;
+        }
+
+        // Show specific help for AT credentials
+        if (errorMsg.includes('AFRICASTALKING') || errorMsg.includes('credentials')) {
+          toast.error('Africa\'s Talking API credentials not configured. Please check the setup guide.');
         } else {
-          toast.error('Failed to send reminder. Please check your configuration.');
+          toast.error(errorMsg);
         }
       } else {
         toast.success('Reminder sent successfully!');
-        // Reload schedules and logs to update status
         loadSchedules();
         loadLogs();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to send reminder:', error);
-      toast.error('Failed to send reminder');
+      toast.error(error?.message || 'Failed to send reminder');
     } finally {
       setSendingReminder(null);
     }
@@ -352,8 +364,8 @@ export default function SchedulesPage() {
                   <CardContent className="p-3 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-full ${log.status === 'sent' || log.status === 'delivered' || log.status === 'confirmed'
-                          ? 'bg-primary/10 text-primary'
-                          : 'bg-destructive/10 text-destructive'
+                        ? 'bg-primary/10 text-primary'
+                        : 'bg-destructive/10 text-destructive'
                         }`}>
                         {log.channel === 'voice' ? <Phone className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
                       </div>
