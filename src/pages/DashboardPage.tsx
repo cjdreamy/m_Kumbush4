@@ -38,7 +38,7 @@ import {
 export default function DashboardPage() {
   const { profile } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [adherenceData, setAdherenceData] = useState<{ date: string; confirmed: number; missed: number }[]>([]);
+  const [adherenceData, setAdherenceData] = useState<{ date: string; confirmed: number; missed: number; sent: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -68,17 +68,17 @@ export default function DashboardPage() {
     if (!stats) return;
     try {
       setAiLoading(true);
-      const adherenceHistory = adherenceData.map(d => `${d.date}: ${d.confirmed} confirmed, ${d.missed} missed`).join('\n');
+      const adherenceHistory = adherenceData.map(d => `${d.date}: ${d.confirmed} confirmed, ${d.missed} missed, ${d.sent} sent`).join('\n');
 
       const context = `Current Stats:
 - Total Elderly: ${stats.total_elderly}
 - Active Schedules: ${stats.active_schedules}
 - Pending Reminders: ${stats.pending_reminders}
-- Missed Today: ${stats.missed_reminders_today}
+- Missed Today (or Failed): ${stats.missed_reminders_today}
 - Confirmed Today: ${stats.confirmed_reminders_today}
-- Sent Today: ${stats.reminders_sent_today}
+- Sent Today (Successful): ${stats.reminders_sent_today}
 
-Last 7 Days Adherence History:
+Last 7 Days Activity History:
 ${adherenceHistory} `;
 
       const insight = await generateCareInsights(context);
@@ -127,7 +127,7 @@ ${adherenceHistory} `;
       title: 'Sent Today',
       value: stats?.reminders_sent_today || 0,
       icon: TrendingUp,
-      description: 'Reminders delivered',
+      description: 'Successful deliveries',
       color: 'text-primary',
       bgColor: 'bg-primary/10',
     },
@@ -185,8 +185,8 @@ ${adherenceHistory} `;
                   <CardTitle className="text-sm font-medium">
                     {stat.title}
                   </CardTitle>
-                  <div className={`h - 8 w - 8 rounded - full ${stat.bgColor} flex items - center justify - center`}>
-                    <stat.icon className={`h - 4 w - 4 ${stat.color} `} />
+                  <div className={`h-8 w-8 rounded-full ${stat.bgColor} flex items-center justify-center`}>
+                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -209,7 +209,7 @@ ${adherenceHistory} `;
                 Care Adherence Trends
               </CardTitle>
               <CardDescription>
-                Overview of reminder confirmations vs missed events over the last 7 days
+                Activity overview: Successful sends, Confirmations, and Missed/Failed events
               </CardDescription>
             </div>
           </CardHeader>
@@ -242,18 +242,25 @@ ${adherenceHistory} `;
                     />
                     <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
                     <Bar
-                      name="Confirmed"
-                      dataKey="confirmed"
+                      name="Sent"
+                      dataKey="sent"
                       fill="hsl(var(--primary))"
                       radius={[4, 4, 0, 0]}
-                      barSize={30}
+                      barSize={20}
                     />
                     <Bar
-                      name="Missed"
+                      name="Confirmed"
+                      dataKey="confirmed"
+                      fill="hsl(var(--chart-4))"
+                      radius={[4, 4, 0, 0]}
+                      barSize={20}
+                    />
+                    <Bar
+                      name="Missed/Failed"
                       dataKey="missed"
                       fill="hsl(var(--destructive))"
                       radius={[4, 4, 0, 0]}
-                      barSize={30}
+                      barSize={20}
                     />
                   </BarChart>
                 </ResponsiveContainer>

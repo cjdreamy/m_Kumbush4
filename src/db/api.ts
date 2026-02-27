@@ -337,7 +337,7 @@ export async function getDashboardStats(caregiverId?: string): Promise<Dashboard
 
   const { data: todayLogs } = await logsQuery;
 
-  const missedToday = todayLogs?.filter(log => log.status === 'missed').length || 0;
+  const missedToday = todayLogs?.filter(log => log.status === 'missed' || log.status === 'failed').length || 0;
   const sentToday = todayLogs?.filter(log => log.status === 'sent' || log.status === 'delivered').length || 0;
   const confirmedToday = todayLogs?.filter(log => log.status === 'confirmed').length || 0;
 
@@ -351,8 +351,8 @@ export async function getDashboardStats(caregiverId?: string): Promise<Dashboard
   };
 }
 
-export async function getAdherenceStats(caregiverId?: string): Promise<{ date: string; confirmed: number; missed: number }[]> {
-  const stats: { [key: string]: { confirmed: number; missed: number } } = {};
+export async function getAdherenceStats(caregiverId?: string): Promise<{ date: string; confirmed: number; missed: number; sent: number }[]> {
+  const stats: { [key: string]: { confirmed: number; missed: number; sent: number } } = {};
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - i);
@@ -363,7 +363,7 @@ export async function getAdherenceStats(caregiverId?: string): Promise<{ date: s
   // Initialize stats for each day
   last7Days.forEach(date => {
     const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    stats[dateStr] = { confirmed: 0, missed: 0 };
+    stats[dateStr] = { confirmed: 0, missed: 0, sent: 0 };
   });
 
   const startDate = last7Days[0].toISOString();
@@ -384,7 +384,8 @@ export async function getAdherenceStats(caregiverId?: string): Promise<{ date: s
     const dateStr = new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     if (stats[dateStr]) {
       if (log.status === 'confirmed') stats[dateStr].confirmed++;
-      if (log.status === 'missed') stats[dateStr].missed++;
+      else if (log.status === 'missed' || log.status === 'failed') stats[dateStr].missed++;
+      else if (log.status === 'sent' || log.status === 'delivered') stats[dateStr].sent++;
     }
   });
 

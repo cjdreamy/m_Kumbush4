@@ -57,20 +57,26 @@ serve(async (req) => {
       }),
     });
 
-    const voiceData = await voiceResponse.json();
+    const responseText = await voiceResponse.text();
+    let voiceData;
+    let status = 'failed';
+    let errorMessage: string | null = null;
+    try {
+      voiceData = JSON.parse(responseText);
+      status = voiceData.entries?.[0]?.status === 'Queued' ? 'sent' : 'failed';
+      errorMessage = status !== 'sent' ? voiceData.errorMessage || responseText : null;
+    } catch (e) {
+      console.error('Failed to parse AT voice response:', responseText);
+      errorMessage = `Server Error: ${responseText.substring(0, 100)}`;
+      status = 'failed';
+    }
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Determine status based on response
-    const status = voiceData.entries?.[0]?.status === 'Queued' ? 'sent' : 'failed';
-    const errorMessage = voiceData.entries?.[0]?.status !== 'Queued'
-      ? voiceData.errorMessage || 'Call failed'
-      : null;
-
-    // Log the voice call attempt
+    // 1. Log the voice call attempt
     await supabase.from('reminder_logs').insert({
       reminder_id: reminderId || null,
       elderly_id: elderlyId,
@@ -82,7 +88,15 @@ serve(async (req) => {
       sent_at: new Date().toISOString(),
     });
 
-    // 4. Handle Caregiver Confirmation (Voice calls are primary level)
+    // 2. Update reminder status if reminderId provided
+    if (reminderId) {
+      await supabase
+        .from('reminders')
+        .update({ status: status })
+        .eq('id', reminderId);
+    }
+
+    // 3. Handle Caregiver Confirmation (Voice calls are primary level)
     if (status === 'sent' && caregiverId) {
       try {
         const { data: caregiver } = await supabase
@@ -120,10 +134,10 @@ serve(async (req) => {
       JSON.stringify({
         success: status === 'sent',
         status: status,
-        data: voiceData,
+        data: voiceData || { error: responseText },
       }),
       {
-        status: 200,
+        status: status === 'sent' ? 200 : 400,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       }
     );

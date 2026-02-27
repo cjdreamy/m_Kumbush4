@@ -68,14 +68,17 @@ serve(async (req) => {
 
     const responseText = await smsResponse.text();
     let smsData;
+    let status = 'failed';
+    let errorMessage = null;
+
     try {
       smsData = JSON.parse(responseText);
+      status = smsData.SMSMessageData?.Recipients?.[0]?.status === 'Success' ? 'sent' : 'failed';
+      errorMessage = status !== 'sent' ? smsData.SMSMessageData?.Recipients?.[0]?.status || responseText : null;
     } catch (e) {
-      console.error('Failed to parse AT response as JSON:', responseText);
-      return new Response(
-        JSON.stringify({ error: `Africa's Talking Error: ${responseText}` }),
-        { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-      );
+      console.error('Failed to parse AT response:', responseText);
+      errorMessage = `Server Error: ${responseText.substring(0, 100)}`;
+      status = 'failed';
     }
 
     // Initialize Supabase client
@@ -83,13 +86,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Determine status based on response
-    const status = smsData.SMSMessageData?.Recipients?.[0]?.status === 'Success' ? 'sent' : 'failed';
-    const errorMessage = smsData.SMSMessageData?.Recipients?.[0]?.status !== 'Success'
-      ? smsData.SMSMessageData?.Recipients?.[0]?.status
-      : null;
-
-    // Log the SMS attempt
+    // 1. Log the SMS attempt
     await supabase.from('reminder_logs').insert({
       reminder_id: reminderId || null,
       elderly_id: elderlyId,
@@ -101,7 +98,15 @@ serve(async (req) => {
       sent_at: new Date().toISOString(),
     });
 
-    // 4. Handle Caregiver Confirmation (if this is not already a confirmation)
+    // 2. Update reminder status if reminderId provided
+    if (reminderId) {
+      await supabase
+        .from('reminders')
+        .update({ status: status })
+        .eq('id', reminderId);
+    }
+
+    // 3. Handle Caregiver Confirmation (if primary SMS and success)
     if (!isConfirmation && status === 'sent' && caregiverId) {
       try {
         const { data: caregiver } = await supabase
@@ -119,7 +124,7 @@ serve(async (req) => {
 
           const caregiverMessage = `M-Kumbusha Confirmation: Reminder sent to ${elderly?.full_name || 'Elderly'}: "${message.length > 50 ? message.substring(0, 50) + '...' : message}"`;
 
-          // Recursive call to send-sms as a confirmation
+          // Trigger confirmation SMS (marks as isConfirmation: true to avoid loops)
           await supabase.functions.invoke('send-sms', {
             body: {
               to: caregiver.phone_number,
@@ -139,10 +144,10 @@ serve(async (req) => {
       JSON.stringify({
         success: status === 'sent',
         status: status,
-        data: smsData,
+        data: smsData || { error: responseText },
       }),
       {
-        status: 200,
+        status: status === 'sent' ? 200 : 400,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       }
     );
