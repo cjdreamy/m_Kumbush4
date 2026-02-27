@@ -87,6 +87,23 @@ serve(async (req) => {
       results.push({ type: 'voice', result: voiceResult });
     }
 
+    // Send confirmation to caregiver if their phone number is available
+    if (elderly.caregiver?.phone_number) {
+      try {
+        const caregiverMessage = `M-Kumbusha Confirmation: Reminder sent to ${elderly.full_name}: "${message.length > 60 ? message.substring(0, 60) + '...' : message}"`;
+        await supabase.functions.invoke('send-sms', {
+          body: {
+            to: elderly.caregiver.phone_number,
+            message: caregiverMessage,
+            elderlyId: elderlyId,
+            caregiverId: caregiverId,
+          },
+        });
+      } catch (logError) {
+        console.error('Failed to send caregiver confirmation:', logError);
+      }
+    }
+
     // Check if we need to escalate to secondary contact
     // This would typically be done after a timeout, but for demo we'll log it
     if (elderly.secondary_contact) {
@@ -94,15 +111,15 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         reminderId: reminder?.id,
         results: results,
         message: 'Reminder sent successfully',
       }),
-      { 
-        status: 200, 
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       }
     );
 

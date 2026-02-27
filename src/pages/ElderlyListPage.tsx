@@ -8,12 +8,49 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { getElderlyList } from '@/db/api';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Elderly } from '@/types/database';
-import { Plus, User, Phone, Calendar, Edit, AlertCircle } from 'lucide-react';
+import { Plus, User, Phone, Calendar, AlertCircle, Send, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/db/supabase';
+import { toast } from 'sonner';
 
 export default function ElderlyListPage() {
   const { profile } = useAuth();
   const [elderly, setElderly] = useState<Elderly[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sendingSms, setSendingSms] = useState<string | null>(null);
+  const [smsMessage, setSmsMessage] = useState('');
+
+  const handleSendInstantSms = async (person: Elderly) => {
+    if (!smsMessage) return;
+    if (!person.primary_contact) {
+      toast.error('No primary contact for this person');
+      return;
+    }
+
+    setSendingSms(person.id);
+    try {
+      const { error } = await supabase.functions.invoke('send-sms', {
+        body: {
+          to: person.primary_contact,
+          message: smsMessage,
+          elderlyId: person.id,
+          caregiverId: profile?.id,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success('Instant SMS sent successfully!');
+      setSmsMessage('');
+    } catch (error) {
+      console.error('Failed to send instant SMS:', error);
+      toast.error('Failed to send SMS. Check your configuration.');
+    } finally {
+      setSendingSms(null);
+    }
+  };
 
   useEffect(() => {
     loadElderly();
@@ -111,7 +148,7 @@ export default function ElderlyListPage() {
                       <span className="text-muted-foreground">{person.primary_contact}</span>
                     </div>
                   )}
-                  
+
                   {person.medical_conditions && person.medical_conditions.length > 0 && (
                     <div className="flex items-start gap-2">
                       <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5" />
@@ -131,12 +168,53 @@ export default function ElderlyListPage() {
                   )}
 
                   <div className="flex gap-2 pt-2">
-                    <Button asChild variant="outline" size="sm" className="flex-1">
-                      <Link to={`/elderly/${person.id}`}>
-                        <Edit className="mr-2 h-3 w-3" />
-                        Manage
-                      </Link>
-                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="flex-1">
+                          <Send className="mr-2 h-3 w-3" />
+                          Send Now
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Send Instant SMS</DialogTitle>
+                          <DialogDescription>
+                            Send a quick message to {person.full_name}. This will use the alphanumeric sender ID "M_kumbusha".
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="message">Message</Label>
+                            <Textarea
+                              id="message"
+                              placeholder="Type your message here..."
+                              value={smsMessage}
+                              onChange={(e) => setSmsMessage(e.target.value)}
+                              rows={4}
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            onClick={() => handleSendInstantSms(person)}
+                            disabled={!smsMessage || sendingSms === person.id}
+                          >
+                            {sendingSms === person.id ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Sending...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="mr-2 h-4 w-4" />
+                                Send SMS
+                              </>
+                            )}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+
                     <Button asChild variant="outline" size="sm" className="flex-1">
                       <Link to={`/schedules?elderly=${person.id}`}>
                         <Calendar className="mr-2 h-3 w-3" />

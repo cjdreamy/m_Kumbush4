@@ -10,6 +10,7 @@ interface SMSRequest {
   elderlyId: string;
   caregiverId: string;
   reminderId?: string;
+  isConfirmation?: boolean;
 }
 
 serve(async (req) => {
@@ -25,7 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const { to, message, elderlyId, caregiverId, reminderId }: SMSRequest = await req.json();
+    const { to, message, elderlyId, caregiverId, reminderId, isConfirmation }: SMSRequest = await req.json();
 
     if (!to || !message) {
       return new Response(
@@ -51,6 +52,7 @@ serve(async (req) => {
         username: AFRICASTALKING_USERNAME,
         to: to,
         message: message,
+        from: isSandbox ? '' : 'M_kumbusha', // Only use sender ID in production if allowed
       }),
     });
 
@@ -79,12 +81,38 @@ serve(async (req) => {
       sent_at: new Date().toISOString(),
     });
 
-    // Update reminder status if reminderId provided
-    if (reminderId) {
-      await supabase
-        .from('reminders')
-        .update({ status: status })
-        .eq('id', reminderId);
+    // 4. Handle Caregiver Confirmation (if this is not already a confirmation)
+    if (!isConfirmation && status === 'sent' && caregiverId) {
+      try {
+        const { data: caregiver } = await supabase
+          .from('profiles')
+          .select('full_name, phone_number')
+          .eq('id', caregiverId)
+          .single();
+
+        if (caregiver?.phone_number) {
+          const { data: elderly } = await supabase
+            .from('elderly')
+            .select('full_name')
+            .eq('id', elderlyId)
+            .single();
+
+          const caregiverMessage = `M-Kumbusha Confirmation: Reminder sent to ${elderly?.full_name || 'Elderly'}: "${message.length > 50 ? message.substring(0, 50) + '...' : message}"`;
+
+          // Recursive call to send-sms as a confirmation
+          await supabase.functions.invoke('send-sms', {
+            body: {
+              to: caregiver.phone_number,
+              message: caregiverMessage,
+              elderlyId,
+              caregiverId,
+              isConfirmation: true
+            }
+          });
+        }
+      } catch (confError) {
+        console.error('Failed to send caregiver confirmation:', confError);
+      }
     }
 
     return new Response(

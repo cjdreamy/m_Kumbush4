@@ -30,3 +30,11 @@ history/*.json
 WHY_SMS_NOT_SENDING.md
 TODO.md
 pitchin.md
+.env
+COMPLETE_SETUP.md
+TROUBLESHOOTING.md
+WHY_SMS_NOT_SENDING.md
+REMINDER_GUIDE.md
+biome.json
+.rules/
+pitching.md
