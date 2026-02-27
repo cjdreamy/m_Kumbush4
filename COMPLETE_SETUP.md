@@ -36,7 +36,7 @@ You need to add TWO secrets to your Supabase project:
 
 ### How to Add Secrets in Supabase:
 1. Go to your **Supabase Dashboard**
-2. Select your AmaniCare project
+2. Select your M-Kumbusha project
 3. Navigate to **Project Settings** (gear icon in bottom left)
 4. Click on **Edge Functions** in the left menu
 5. Scroll down to **Secrets** section
@@ -60,10 +60,10 @@ Since you're using the sandbox, you must register phone numbers before sending S
 6. Enter the OTP to complete registration
 7. Repeat for any other phone numbers you want to test with
 
-### Step 2: Test in AmaniCare
+### Step 2: Test in M-Kumbusha
 
 1. **Add an Elderly Person:**
-   - Go to **Elderly** page in AmaniCare
+   - Go to **Elderly** page in M-Kumbusha
    - Click **Add Elderly Person**
    - Enter the phone number you registered (e.g., `+254712345678`)
    - Fill in other details and save
@@ -117,7 +117,7 @@ Since you're using the sandbox, you must register phone numbers before sending S
 - [ ] Added `AFRICASTALKING_API_KEY` secret in Supabase
 - [ ] Added `AFRICASTALKING_USERNAME` secret with value `sandbox` in Supabase
 - [ ] Registered test phone numbers in Africa's Talking sandbox
-- [ ] Added elderly person with registered phone number in AmaniCare
+- [ ] Added elderly person with registered phone number in M-Kumbusha
 - [ ] Created a test schedule
 - [ ] Clicked "Send Now"
 - [ ] Checked Reminder Logs - status is "sent"
@@ -154,6 +154,6 @@ Supabase Secrets:
 1. ✅ Get your API Key from Africa's Talking dashboard
 2. ✅ Add both secrets to Supabase Edge Functions
 3. ✅ Register test phone numbers in Africa's Talking sandbox
-4. ✅ Test with "Send Now" in AmaniCare
+4. ✅ Test with "Send Now" in M-Kumbusha
 
 **Once configured, SMS will work! 🎉**

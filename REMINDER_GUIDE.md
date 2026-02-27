@@ -1,7 +1,7 @@
-# AmaniCare - Reminder & Confirmation System Guide
+# M-Kumbusha - Reminder & Confirmation System Guide
 
 ## Overview
-AmaniCare now includes comprehensive reminder scheduling, manual sending, and confirmation tracking with automatic escalation to secondary contacts.
+M-Kumbusha now includes comprehensive reminder scheduling, manual sending, and confirmation tracking with automatic escalation to secondary contacts.
 
 ---
 

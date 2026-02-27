@@ -1,12 +1,12 @@
-# AmaniCare Requirements Document
+# M-Kumbusha Requirements Document
 
 ## 1. Application Overview
 
 ### 1.1 Application Name
-AmaniCare
+M-Kumbusha
 
 ### 1.2 Application Description
-AmaniCare is a multi-channel healthcare reminder and caregiver support platform designed to help elderly people in low-connectivity and rural areas stay consistent with medication, exercise, and care routines. The system supports both basic feature phone users (via USSD, SMS, and voice calls) and smartphone/internet users (via web app dashboard).
+M-Kumbusha is a multi-channel healthcare reminder and caregiver support platform designed to help elderly people in low-connectivity and rural areas stay consistent with medication, exercise, and care routines. The system supports both basic feature phone users (via USSD, SMS, and voice calls) and smartphone/internet users (via web app dashboard).
 
 ## 2. Core Features
 

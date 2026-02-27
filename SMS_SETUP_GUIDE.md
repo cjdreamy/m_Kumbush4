@@ -1,4 +1,4 @@
-# SMS/Voice Setup Guide for AmaniCare
+# SMS/Voice Setup Guide for M-Kumbusha
 
 ## Why SMS is Not Sending
 

@@ -4,6 +4,7 @@ import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import PageMeta from '@/components/common/PageMeta';
 import { generateCareInsights } from '@/lib/gemini';
 import ReactMarkdown from 'react-markdown';
 import { getDashboardStats, getAdherenceStats } from '@/db/api';
@@ -142,7 +143,8 @@ ${adherenceHistory} `;
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      <PageMeta title="M-Kumbusha | Dashboard" description="Elderly care reminder dashboard" />
+      <div className="p-6 space-y-8">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>

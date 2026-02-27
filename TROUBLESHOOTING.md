@@ -74,7 +74,7 @@ If you're using the sandbox environment, you must register phone numbers before 
 
 ### Step 5: Test SMS Sending
 
-1. **In AmaniCare:**
+1. **In M-Kumbusha:**
    - Go to **Elderly** page
    - Add an elderly person with a phone number in international format: `+254712345678`
    - Make sure this number is registered in your Africa's Talking sandbox (if using sandbox)
@@ -174,7 +174,7 @@ Use the correct format:
 ### Issue 5: "User not authenticated"
 
 **Possible Causes:**
-- Not logged in to AmaniCare
+- Not logged in to M-Kumbusha
 - Session expired
 
 **Solution:**
