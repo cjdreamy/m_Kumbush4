@@ -10,15 +10,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { getElderlyList, createSchedule } from '@/db/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { generateVoiceScript } from '@/lib/gemini';
 import { toast } from 'sonner';
 import type { Elderly, FrequencyType, ReminderChannel, LanguageType, ScheduleType } from '@/types/database';
-import { ArrowLeft, Calendar, Clock, MessageSquare, Phone } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MessageSquare, Phone, Sparkles, Loader2 } from 'lucide-react';
 
 export default function AddSchedulePage() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
   const [elderlyList, setElderlyList] = useState<Elderly[]>([]);
+  // ... rest of state ...
+
   const [formData, setFormData] = useState({
     elderly_id: '',
     title: '',
@@ -43,6 +47,32 @@ export default function AddSchedulePage() {
       setElderlyList(data);
     } catch (error) {
       console.error('Failed to load elderly:', error);
+    }
+  };
+
+  const handleGenerateScript = async () => {
+    if (!formData.elderly_id || !formData.title) {
+      toast.error('Please select an elderly person and enter a title first');
+      return;
+    }
+
+    const selectedElderly = elderlyList.find(e => e.id === formData.elderly_id);
+    if (!selectedElderly) return;
+
+    setAiGenerating(true);
+    try {
+      const script = await generateVoiceScript(
+        selectedElderly.full_name,
+        formData.title,
+        formData.description || 'Take as directed'
+      );
+      setFormData(prev => ({ ...prev, description: script }));
+      toast.success('Voice script generated!');
+    } catch (error) {
+      console.error('Failed to generate script:', error);
+      toast.error('Failed to generate AI script');
+    } finally {
+      setAiGenerating(false);
     }
   };
 
@@ -157,7 +187,24 @@ export default function AddSchedulePage() {
 
               {/* Description */}
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="description">Voice script / Description</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-[10px] uppercase font-bold tracking-wider text-primary hover:text-primary hover:bg-primary/10 gap-1.5"
+                    onClick={handleGenerateScript}
+                    disabled={aiGenerating || loading}
+                  >
+                    {aiGenerating ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
+                    Magic Generate
+                  </Button>
+                </div>
                 <Textarea
                   id="description"
                   placeholder="Additional instructions or notes..."

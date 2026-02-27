@@ -9,10 +9,10 @@ import {
   Calendar,
   FileText,
   User,
-  Settings,
   Menu,
   LogOut,
-  Shield
+  Shield,
+  Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +25,7 @@ const navigation = [
   { name: 'Elderly Care', href: '/elderly', icon: Users },
   { name: 'Schedules', href: '/schedules', icon: Calendar },
   { name: 'Reminder Logs', href: '/logs', icon: FileText },
+  { name: 'AI Assistant', href: '/ai-assistant', icon: Sparkles },
   { name: 'Profile', href: '/profile', icon: User },
 ];
 

@@ -8,6 +8,7 @@ import AddSchedulePage from './pages/AddSchedulePage';
 import ReminderLogsPage from './pages/ReminderLogsPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminPage from './pages/AdminPage';
+import AiAssistantPage from './pages/AiAssistantPage';
 import type { ReactNode } from 'react';
 
 interface RouteConfig {
@@ -61,6 +62,11 @@ const routes: RouteConfig[] = [
     name: 'Reminder Logs',
     path: '/logs',
     element: <ReminderLogsPage />
+  },
+  {
+    name: 'AI Assistant',
+    path: '/ai-assistant',
+    element: <AiAssistantPage />
   },
   {
     name: 'Profile',
